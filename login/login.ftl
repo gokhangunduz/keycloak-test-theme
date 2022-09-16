@@ -1,53 +1,85 @@
 <#import "template.ftl" as layout>
-<@layout.registrationLayout displayInfo=social.displayInfo; section>
-    <#if section = "title">
-        ${msg("loginTitle",(realm.displayName!''))}
-    <#elseif section = "header">
-        <link href="https://fonts.googleapis.com/css?family=Muli" rel="stylesheet"/>
-        <link href="${url.resourcesPath}/img/favicon.png" rel="icon"/>
-        <script>
-            function togglePassword() {
-                var x = document.getElementById("password");
-                var v = document.getElementById("vi");
-                if (x.type === "password") {
-                    x.type = "text";
-                    v.src = "${url.resourcesPath}/img/eye.png";
-                } else {
-                    x.type = "password";
-                    v.src = "${url.resourcesPath}/img/eye-off.png";
-                }
-            }
-        </script>
-    <#elseif section = "form">
+<#import "components/provider.ftl" as provider>
+<#import "components/button/primary.ftl" as buttonPrimary>
+<#import "components/checkbox/primary.ftl" as checkboxPrimary>
+<#import "components/input/primary.ftl" as inputPrimary>
+<#import "components/label/username.ftl" as labelUsername>
+<#import "components/link/primary.ftl" as linkPrimary>
+
+<@layout.registrationLayout
+  displayInfo=realm.password && realm.registrationAllowed && !registrationDisabled??
+  displayMessage=!messagesPerField.existsError("username", "password")
+  ;
+  section
+>
+  <#if section="header">
+    ${msg("loginAccountTitle")}
+  <#elseif section="form">
+    <#if realm.password>
+      <form
+        action="${url.loginAction}"
+        class="m-0 space-y-4"
+        method="post"
+        onsubmit="login.disabled = true; return true;"
+      >
+        <input
+          name="credentialId"
+          type="hidden"
+          value="<#if auth.selectedCredential?has_content>${auth.selectedCredential}</#if>"
+        >
         <div>
-            <img class="logo" src="${url.resourcesPath}/img/alfresco-logo.svg" alt="Alfresco">
+          <@inputPrimary.kw
+            autocomplete=realm.loginWithEmailAllowed?string("email", "username")
+            autofocus=true
+            disabled=usernameEditDisabled??
+            invalid=["username", "password"]
+            name="username"
+            type="text"
+            value=(login.username)!''
+          >
+            <@labelUsername.kw />
+          </@inputPrimary.kw>
         </div>
-        <div class="box-container">
-            <div>
-                <p class="application-name">Alfresco Identity Service</p>
-            </div>
-        <#if realm.password>
-            <div>
-               <form id="kc-form-login" class="form" onsubmit="return true;" action="${url.loginAction}" method="post">
-                    <input id="username" class="login-field" placeholder="${msg("username")}" type="text" name="username" tabindex="1">
-                    <div>
-                        <label class="visibility" id="v" onclick="togglePassword()"><img id="vi" src="${url.resourcesPath}/img/eye-off.png"></label>
-                    </div>
-                <input id="password" class="login-field" placeholder="${msg("password")}" type="password" name="password" tabindex="2">
-                <input class="submit" type="submit" value="${msg("doLogIn")}" tabindex="3">
-                </form>
-            </div>
-        </#if>
-        <#if social.providers??>
-            <p class="para">${msg("selectAlternative")}</p>
-            <div id="social-providers">
-                <#list social.providers as p>
-                <input class="social-link-style" type="button" onclick="location.href='${p.loginUrl}';" value="${p.displayName}"/>
-                </#list>
-            </div>
-        </#if>
         <div>
-            <p class="copyright">&copy; ${msg("copyright", "${.now?string('yyyy')}")}</p>
+          <@inputPrimary.kw
+            invalid=["username", "password"]
+            message=false
+            name="password"
+            type="password"
+          >
+            ${msg("password")}
+          </@inputPrimary.kw>
         </div>
+        <div class="flex items-center justify-between">
+          <#if realm.rememberMe && !usernameEditDisabled??>
+            <@checkboxPrimary.kw checked=login.rememberMe?? name="rememberMe">
+              ${msg("rememberMe")}
+            </@checkboxPrimary.kw>
+          </#if>
+          <#if realm.resetPasswordAllowed>
+            <@linkPrimary.kw href=url.loginResetCredentialsUrl>
+              <span class="text-sm">${msg("doForgotPassword")}</span>
+            </@linkPrimary.kw>
+          </#if>
+        </div>
+        <div class="pt-4">
+          <@buttonPrimary.kw name="login" type="submit">
+            ${msg("doLogIn")}
+          </@buttonPrimary.kw>
+        </div>
+      </form>
     </#if>
+    <#if realm.password && social.providers??>
+      <@provider.kw />
+    </#if>
+  <#elseif section="info">
+    <#if realm.password && realm.registrationAllowed && !registrationDisabled??>
+      <div class="text-center">
+        ${msg("noAccount")}
+        <@linkPrimary.kw href=url.registrationUrl>
+          ${msg("doRegister")}
+        </@linkPrimary.kw>
+      </div>
+    </#if>
+  </#if>
 </@layout.registrationLayout>
